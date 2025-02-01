@@ -30,10 +30,36 @@ draw_screen() {
     done
     echo
 }
+read_keys(){
+key=" " # reset key for no repeat
+ # Read the first character (escape sequence starts with \x1b)
+        read -rsn1 input
+
+        # Check if the input is the escape character (\x1b)
+        if [[ "$input" == $'\x1b' ]]; then
+            # Read the next two characters
+            read -rsn2 -t 0.1 input2  # -t 0.1 sets a timeout to avoid blocking
+            input+="$input2"
+
+            # Determine the arrow key
+            case "$input" in
+                $'\x1b[A')  key="j" ;;# Up arrow
+                $'\x1b[B')  key=" " ;; # Down arrow
+                $'\x1b[C')  key="d" ;; # Right arrow
+                $'\x1b[D')  key="a" ;; # Left arrow
+                esac
+        else
+            # Handle other keys (e.g., 'q' to quit)
+            case "$input" in
+                q) echo -e  "Exiting...\r"; exit ;;
+                #*) key=" " ;; #echo -e  "You pressed: $input\r" ;;
+            esac
+        fi
+}
 
 # Function to move the buggy
 move_buggy() {
-    read -s -n 1 key
+   # read -s -n 1 key
     case $key in
         a) ((buggy_pos--)) ;;
         d) ((buggy_pos++)) ;;
@@ -70,6 +96,7 @@ while [[ $game_over -eq 0 ]]; do
     move_buggy
     move_obstacle
     check_collision
+    read_keys
     sleep 0.1
 done
 
