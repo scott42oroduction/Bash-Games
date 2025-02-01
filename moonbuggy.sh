@@ -106,7 +106,3 @@ echo "Game Over!"
 echo "Final Score: $score"
 
 
-
-
-
-
