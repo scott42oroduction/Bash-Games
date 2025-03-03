@@ -1,24 +1,26 @@
 #!/bin/bash
 
-# Moon Buggy Game in Bash
+# Moon Buggy Game in Bash by Scott McGilligan
 
+init(){
+original_stty=$(stty -g) # save terminal state to restore in ending
+# Set terminal to raw mode
+stty raw -echo  #turn off echo key presses
+printf '\033c' #clear screen
+echo -en "\033[?25l" #turn off cursor 
 # Initialize variables
 jump_off=0    # turn on jump
 jump_delay=0   # reset delay
-# buggy_image="^"
-key=0
-buggy_pos=20
+key=0 # key read var
+buggy_pos=20 # start x position of car
 buggy_height=13 # ground is 15, 14 is down and car is 2 high
 old_buggy_pos=$buggy_pos #for destructor
 old_buggy_height=$buggy_height #for destructor
 old_obstacle_pos=80 #for destructor
-obstacle_pos=80
+obstacle_pos=80 # rock start x pos
 score=0
-game_over=0
-
-echo -e "\033[?25l" #turn off cursor 
-stty -echo #turn off echo key presses
-clear
+game_over=0 # main loop control
+}
 
 xyprint() { # x,y,"string"
 echo -e "\033[40m" # back ground color 40 black
@@ -37,7 +39,7 @@ echo -e '\033[30m' # fore ground color 30 black tires
 echo -e "\033[$(( ${2} + 1 ));$(( ${1} + 0 ))HO  o "  # print chars at x,y door
 }
  
-put_bullet(){
+put_bullet(){ # future addition
 echo -e '\033[45m' # back ground color 45 purple
 echo -e '\033[35m' # fore ground color 35 purple
 echo -e "\033[${2};${1}Hx" # print 1 block at x,y 
@@ -60,12 +62,7 @@ echo -e '\033[43m' # back ground color 43 yellow
 echo -e '\033[33m' # fore ground color 33 yellow
 echo -e "\033[15;0Hxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 }
-# put_rock 80 14
-# put_car 7 13
-# put_bullet 20 14
-# put_ground  #testing only
-# put_hole 79 15
-# 
+
 # Function to draw the game screen
 draw_screen() {
     # read -t 0.01 #clear key buffer
@@ -86,35 +83,10 @@ draw_screen() {
     put_car $buggy_pos $buggy_height 1
     old_buggy_pos=$buggy_pos 
     old_buggy_height=$buggy_height
-    
-
-    ##### old #### need to draw buggy, rock and spaces in one loop otherwise it would erase others
-    ###### old #### first loop for top level
-    ##### old ####for ((i=0; i<=20; i++)); do 
-     ##### old ####   if [[ $i -eq $buggy_pos && buggy_height -eq 1 ]]; then
-      ##### old ####      echo -n "^"
-      ##### old ####  else
-      ##### old ####      echo -n " "
-      ##### old ####  fi
-    ##### old ####   done
-    ##### old #### echo -e "\r" # start new line
-    ###### old #### loop for main level
-    ##### old #### for ((i=0; i<=20; i++)); do
-       ##### old #### if [[ $i -eq $buggy_pos && buggy_height -eq 0 ]]; then
-       ##### old ####     echo -n "$buggy_image"
-       ##### old #### elif [[ $i -eq $obstacle_pos ]]; then
-       ##### old ####     echo -n "O"
-      ##### old #### else
-       ##### old ####     echo -n " "
-      ##### old ####  fi
-    ##### old #### done
     put_ground # new call for color, old down in note
     ###### old ####  echo -e "\n______________________________" # print the floor...NICE TILE!!!
-   # sleep 20 #testing only
-   # reset     #testing only
-   # exit      #testing only
-    # read -t 0.01 #clear key buffer
 }
+
 read_keys(){
  key=0 # reset key for no repeat
  # Read the first character (escape sequence starts with \x1b)
@@ -142,20 +114,6 @@ read_keys(){
        fi
 }
 
-# Function for our exit
-our_exit() {
- # now done in detonation    draw_screen # needed or the game ends without showing collision
- echo -e "\033[?25h" # show cursor
- stty echo # echo key presses
- # reset colors
- echo -e "\033[40m" # back ground color 40 black
- clear
- echo -e '\033[37m' # fore ground color 37 white
- echo -e "Game Over! \r"
- echo -e  "Exiting...Final score is: $score \r"
- echo -e '\033[32m' # fore ground color 32 green
- exit
-}
 
 # Function to move the buggy
 move_buggy() {
@@ -197,7 +155,7 @@ move_buggy() {
 move_obstacle() {
     ((obstacle_pos--))
     if [[ $obstacle_pos -lt 0 ]]; then
-        obstacle_pos=80
+        obstacle_pos=$((80 - RANDOM % 3)) # rand removes bouncing repeat wins by holding key up
         ((score++))
     fi
 }
@@ -205,7 +163,7 @@ move_obstacle() {
 # Function to check for collision
 check_collision() {
     if [[ $(( $buggy_pos + 3 )) -eq $obstacle_pos && $buggy_height -eq 13 ]]; then
-       # Detination
+        Detination
         our_exit
     fi
     # stop cheating no going through boulders, only one case, right key with bolder in front and down
@@ -213,31 +171,44 @@ check_collision() {
     # xyprint 5 7  "$next_pos  $buggy_pos   $buggy_height   $key"
     if [[ $(( $buggy_pos + 3 )) -eq $next_pos && $buggy_height -eq 13 && $key -eq 3 ]]; then
         #echo "$next_pos  $buggy_pos   $buggy_height   $key"; exit # debug
-        # Detination  #collision
+        Detination  #collision
         our_exit 
     fi
 }
 
 Detination(){
 # lets start small, $buggy_pos plus rand chars, use draw_screen?
- buggy_image=" >&^$%"
- draw_screen
+put_car $old_buggy_pos $old_buggy_height 0 # remove old car
+echo -e "\033[41m" # back ground color 41 red
+echo -e '\033[30m' # fore ground color 30 black
+echo -e "\033[14;$(( ${buggy_pos} + 3 ))H#o&0*" # print chars " " at x,y top crash chars
  sleep .3
- buggy_image=" ->.$&^^&*^"
- draw_screen
+echo -e "\033[41m" # back ground color 41 red
+echo -e '\033[30m' # fore ground color 30 black
+echo -e "\033[14;$(( ${buggy_pos} + 3 ))H @%o^&  *" # print chars " " at x,y top crash chars
  sleep .3
- buggy_image=" .:<=!%$&@%*&^(&%"
- draw_screen
+echo -e "\033[41m" # back ground color 41 red
+echo -e '\033[30m' # fore ground color 30 black
+echo -e "\033[14;$(( ${buggy_pos} + 3 ))H @  %  ^ O &  *" # print chars " " at x,y top crash chars
  sleep .3
- buggy_image=" .,.:@ $ $%(=@$%&*^%^$%^@%&$%&*^&*" #what a mess, i'm not cleaning that up
- draw_screen
  our_exit
 }
 
+# Function for our exit
+our_exit() {
+ # reset colors
+ echo -e "\033[40m" # back ground color 40 black
+ echo -e '\033[37m' # fore ground color 37 white
+ printf '\033c' #clear screen
+ echo -e "Game Over! \r"
+ echo -e  "Exiting...Final score is: $score \r"
+ # Restore terminal settings
+  stty "$original_stty"
+ exit
+}
 
-# cmd="move_obstacle" #fun test of function call of evaluated string variable cmd
 
- 
+init # put all terminal and game setup here
 # Main game loop
 while true ; do
     draw_screen
