@@ -4,16 +4,17 @@ set -euo  pipefail
 
 # Moon Buggy Game in Bash by Scott McGilligan
 
-init(){
 original_stty=$(stty -g) # save terminal state to restore in ending, somehow gets right type
 trap our_exit SIGTERM  # catch errors and exit
 trap our_exit ERR  
-trap ' ' SIGINT # ignore, it sucks but works exiting causes no echo dispite many stty calls
-trap ' ' SIGTSTP # ignore, resets and clears all fail
+trap '' SIGINT # ignore, it sucks but works exiting causes no echo dispite many stty calls
+trap '' SIGTSTP # ignore, resets and clears all fail
 # Set terminal to raw mode
 stty raw -echo  #turn off echo key presses
 printf '\033c' #clear screen
 echo -en "\033[?25l" #turn off cursor 
+
+init(){
 # Initialize variables
 jump_off=0    # turn on jump
 jump_delay=0   # reset delay
@@ -65,13 +66,14 @@ echo -e "\033[${2};${1}Ho" # print 1 block at x,y
 put_ground(){ # needs nothing, static for now, like I don't know ... like the ground!!
 echo -e '\033[43m' # back ground color 43 yellow
 #echo -e '\033[33m' # fore ground color 33 yellow
+# print the ground, which is clear hear but brownish there
 echo -e "\033[15;0H                                                                                           "
 }
 
 # Function to draw the game screen
 draw_screen() {
     xyprint 5 5 "Score: $score"  # function call x,y,string
-    xyprint 5 6 "Use arrows to move, q to quit"
+    xyprint 5 6 "Use arrows to move, q, c, z, or esc to quit"
     # no need for loops, just put it x and y
     # put rock first to not destroy our car on redraw, ugly but works
     # remove old rock 0 black
@@ -95,13 +97,12 @@ read_keys(){
        then
              # Check if the input is the escape character (\x1b)
             if [[ "$input" == $'\x1b' ]]; then
-                    # Read the next two characters
+                    # Read the next two characters, screws up on solo esc, nothing to read
                     if read -r -s -N2 -t '0.1' input2  # -t 0.2 sets a timeout to avoid blocking
                     then
                       input+="$input2" # input is now 3 chars in lenght
                        # Determine the arrow key
                        case "$input" in
-                           #$'\x1b') our_exit;; #esc key hit solo
                            $'\x1b[B')  key=2 ;; # Down arrow
                            $'\x1b[C')  key=3 ;; # Right arrow
                            $'\x1b[D')  key=4 ;; # Left arrow 
@@ -113,7 +114,7 @@ read_keys(){
             else 
                       # Handle other keys (e.g., 'q' to quit)
                       case "$input" in  # left as case for future expansion, input is only one char
-                        q) our_exit ;;
+                        [q,Q,c,C,Z,z]) our_exit ;;
                         *) key=5 ;; # echo -e  "You pressed: $input\r" ;;
                       esac
             fi
